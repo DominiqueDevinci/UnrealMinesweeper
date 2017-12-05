@@ -15,10 +15,11 @@ class BoardController:
         self.constraints=ConstraintManager(self)
         self.width=width
         self.height=height
+        self.length=height*width
         self.view=view
         self.itemsView=[None]*(width*height)
         self.itemsState=[-1]*(width*height) #state : -3 = mine hited (game over), -2 = flagged, -1=unknown, >=0 = number of surrounding mines
-        #default state : unknow
+        #default state : unknown
         self.itemsValue=[False]*(width*height)
         
         minesLanded=0;
@@ -57,7 +58,14 @@ class BoardController:
             print "printing constraints ..."
             for c in self.constraints.getConstraintsById(id):
                 print c
+                
+    def knownId(self): #iterate for associating each id with nb of mines surrounding this suqare
+        for id in xrange(0, length):
+            if(itemsState[id]>=0):
+                yield id, itemState[id]
             
+    def setProbability(self, id, p):
+        itemsView[id].setProbability(p)
             
     def getSurroundingIndexesOld(self, id):
         listIndex=list()
