@@ -5,6 +5,7 @@ from PyQt4.QtCore import *
 
 from ImageLoader import ImageLoader
 from BoardController import BoardController
+from Util import choose
 
 import Solver
 
@@ -14,10 +15,13 @@ class QPushButtonCustom(QPushButton):
         super(QPushButtonCustom, self).__init__()
         self.id=id
         self.flagged=False;        
-        self.setFixedSize(35, 35)
+        self.setFixedSize(45, 45)
         self.surroundingMines=-1 # -1 = number of surrounding mines unknown
         self.updateView()
         
+    def setProbability(self, p):
+        self.setText(str(int(p*100))+"%")
+            
         
     def getId(self):
         return self.id

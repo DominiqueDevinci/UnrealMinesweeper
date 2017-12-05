@@ -12,7 +12,7 @@ class BoardController:
             print "You have too much mines (>50%)"
             return
         
-        self.constraints=ConstraintManager(self)
+        self.constraintManager=ConstraintManager(self)
         self.width=width
         self.height=height
         self.length=height*width
@@ -50,22 +50,24 @@ class BoardController:
             surroundingMines=0;            
         
             for i in self.getSurroundingIndexes(id):
-                if(self.itemsValue[i]):
-                    surroundingMines+=1
-                    
+                try:
+                    if(self.itemsValue[i]):
+                        surroundingMines+=1
+                except:
+                    print "error with id "+str(i)
             self.itemsState[id]=surroundingMines
             button.setSurroundingMines(surroundingMines)
-            print "printing constraints ..."
-            for c in self.constraints.getConstraintsById(id):
-                print c
+            self.constraintManager.computeProbabilities()
                 
     def knownId(self): #iterate for associating each id with nb of mines surrounding this suqare
-        for id in xrange(0, length):
-            if(itemsState[id]>=0):
-                yield id, itemState[id]
+        for id in xrange(0, self.length):
+            if(self.itemsState[id]>=0):
+                yield id, self.itemsState[id]
             
     def setProbability(self, id, p):
-        itemsView[id].setProbability(p)
+        if self.itemsState[id]==-1: #dont display probability if square is known
+            self.itemsView[id].setProbability(p)
+            
             
     def getSurroundingIndexesOld(self, id):
         listIndex=list()
