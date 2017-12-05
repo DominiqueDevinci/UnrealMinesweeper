@@ -95,6 +95,7 @@ class BoardController:
         return listIndex
             
     def getSurroundingIndexes(self, id): #iterable version of getSurroundingIndex (best performances)
+        
         leftBoundOffset=1         
         if id%self.width==0: #bord left
             leftBoundOffset=0
@@ -107,7 +108,7 @@ class BoardController:
             for i in range(id-self.width-(1*leftBoundOffset), id-self.width+(1*rightBoundOffset) +1):
                  yield i
                 
-        for i in range(id-1, id+2):
+        for i in range(id-(1*leftBoundOffset), id+1*rightBoundOffset +1):
             yield i
         
         if id<self.width*(self.height-1): #if it's not last line
