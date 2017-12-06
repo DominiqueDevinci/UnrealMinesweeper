@@ -84,7 +84,7 @@ class MinesweeperGUI(QMainWindow):
         
         ImageLoader.init();      
         self.mainLayout=None
-        self.setStatus(" Ready to play !");
+        self.setStatus(" Ready to play ! ");
 
     def setDebug(self):
         self.boardController.setVerboseDisplay(self.verboseDisplay.isChecked())
@@ -154,11 +154,11 @@ class MinesweeperGUI(QMainWindow):
         
         self.height=height
         self.width=width
-        self.length=height*width;
-        self.mines=mines;
+        self.length=height*width
+        self.mines=mines
         self.boardController=BoardController(self, width, height, mines)
         self.initBoard() 
-        
-    def updateItems(self, updatedItems): #updatedItems is a frozenset containing modified item. The value is -1 if unknow, 0 if mi
-        return
+        self.setHelper()
+        self.setStatus(" ready to play ! ")
+
      

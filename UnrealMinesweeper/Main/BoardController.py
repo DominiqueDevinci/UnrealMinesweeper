@@ -16,9 +16,12 @@ class BoardController:
         self.constraintManager=ConstraintManager(self)
         self.width=width
         self.height=height
+        self.nbMines=mines;
         self.length=height*width
         self.helper=0 #default = no helper selected
         self.view=view
+        self.endGame=None #True = victory, false = lost
+        
         self.itemsView=[None]*(width*height)
         self.itemsState=[-1]*(width*height) # -2 = flagged, -1=unknown, >=0 = number of surrounding mines
         #default state : unknown
@@ -46,6 +49,7 @@ class BoardController:
             if(val):
                 self.itemsView[i].setState(-3)
         self.view.setStatus("Game over !")
+        self.endGame=False
     
     def doFirstClick(self, id, updateView):
 
@@ -58,6 +62,8 @@ class BoardController:
                 print "first click ("+str(id)+") was mined, moving this mine at index "+str(i)
         self.itemsValue[id]=False
         self.itemClicked(id, updateView, False)   
+        
+        
         
     def itemClicked(self, id, updateView=True, updateHelper=True):
         if(self.itemsState[id]==-1):
@@ -81,8 +87,11 @@ class BoardController:
                     
                     if updateView: #
                         self.itemsView[id].setSurroundingMines(surroundingMines)
-                        self.runHelper()    
+                        self.updateStatus()
+                        self.runHelper() 
+                           
         self.firstClick=False
+        
         
     def setVerboseDisplay(self, vd):
         self.verboseDisplay=vd
@@ -116,6 +125,7 @@ class BoardController:
             self.setFlag(id, False)
            
         self.runHelper()
+        self.updateStatus()
         #else do nothing
     
     def setFlag(self, id, flagged):        
@@ -137,7 +147,30 @@ class BoardController:
             self.itemsView[id].setProbability(p, self.verboseDisplay)
             
             
-    
+    def updateStatus(self):
+        unknowCase=0
+        for i in xrange(0, self.length):
+            if self.itemsState[i]==-1:
+                unknowCase+=1   
+                
+        #no suqare lefting and the user have not exploded !             
+        if unknowCase==0 and self.endGame is None:
+            self.endGame=True
+        
+        if self.endGame is None:
+            count=0
+            for i in xrange(0, self.length):
+                if self.itemsState[i]==-2:
+                    count+=1
+            self.view.setStatus("Mines flagged : "+str(count)+"/"+str(self.nbMines)+". "+str(unknowCase)+" unknown squares.")
+        elif self.endGame is True:
+            self.view.setStatus(" You win !!! ")
+            return True
+        else: 
+            self.view.setStatus(" Game over ! :( ")
+            
+        return False
+        #all other case is not a win (so return false, but it not means "defeat"
             
     def getSurroundingIndexes(self, id): #iterable version of getSurroundingIndex (best performances)
         
