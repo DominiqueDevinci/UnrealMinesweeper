@@ -16,11 +16,13 @@ class BoardController:
         self.width=width
         self.height=height
         self.length=height*width
+        self.helper=0 #default = no helper selected
         self.view=view
         self.itemsView=[None]*(width*height)
         self.itemsState=[-1]*(width*height) #state : -3 = mine hited (game over), -2 = flagged, -1=unknown, >=0 = number of surrounding mines
         #default state : unknown
         self.itemsValue=[False]*(width*height)
+        self.verboseDisplay=False;
         
         minesLanded=0;
         while(minesLanded<mines):
@@ -36,6 +38,7 @@ class BoardController:
     def addItemView(self, index, pushButton): #argument expected: QPushButtonCustom
         self.itemsView[index]=pushButton
         pushButton.connect(pushButton, SIGNAL("clicked()"), lambda: self.itemClicked(pushButton.id))
+        pushButton.connect(pushButton, SIGNAL("rightClick()"), lambda: self.itemRightClicked(pushButton.id))
         
     def gameOver(self):
         for i, val in enumerate(self.itemsValue):
@@ -43,30 +46,63 @@ class BoardController:
                 self.itemsView[i].setState(-3)
         self.view.setStatus("Game over !")
         
-    def itemClicked(self, id):     
-        if(self.itemsValue[id]):
-            self.gameOver()
-        else:
-            surroundingMines=0;            
-        
-            for i in self.getSurroundingIndexes(id):
-                if(self.itemsValue[i]):
-                    surroundingMines+=1
-
-            self.itemsState[id]=surroundingMines
-            self.itemsView[id].setSurroundingMines(surroundingMines)
-            self.constraintManager.computeProbabilities()
+    def itemClicked(self, id, updateView=True, updateHelper=True):
+        if(self.itemsState[id]==-1):
+            if(self.itemsValue[id]!=-2):    #else, do nothing
+                if(self.itemsValue[id]):
+                    self.itemsState[id]=-3 #lost
+                    self.gameOver()
+                else:
+                    surroundingMines=0           
+                    for i in self.getSurroundingIndexes(id):
+                        if(self.itemsValue[i]):
+                            surroundingMines+=1
+                            
+                    self.itemsState[id]=surroundingMines
+                    
+                    if surroundingMines==0: #uncover free surrounding spaces
+                        for i in self.getSurroundingIndexes(id):
+                            self.itemClicked(i, updateView, False) #don't update helper recursively ... just calculate it at the end !
+                    
+                    if updateView: #
+                        self.itemsView[id].setSurroundingMines(surroundingMines)
+                        self.runHelper()    
+    
+    def setVerboseDisplay(self, vd):
+        self.verboseDisplay=vd
+        self.runHelper() #update helper
             
+    def runHelper(self):
+        if(self.helper==1): #proba helper
+            self.constraintManager.computeProbabilities()
+        elif(self.helper==2):
+            return;
+        
+    def cleanHelper(self):        
+        for i in xrange(0, self.length):
+                if self.itemsState[i]<0: # if uncovered case, remove probability from button text
+                    self.itemsView[i].setText("")
+                    
+    def setHelper(self, idHelper):
+        if(idHelper==1 or idHelper==2):
+            self.helper=idHelper
+            self.runHelper()
+        else:
+            self.helper=0
+            self.cleanHelper()
+                    
     def itemRightClicked(self, id):
         if(self.itemsState[id]==-1):
-            setFlag(id, True)
+            self.setFlag(id, True)
         elif(self.itemsState[id]==-2):
-            setFlag(id, False)
+            self.setFlag(id, False)
+            
+        #else do nothing
     
     def setFlag(self, id, flagged):        
         if flagged is True:
             self.itemsState[id]=-2
-        elif flagged is False:
+        else:
             self.itemsState[id]=-1
             
         self.itemsView[id].setFlag(flagged)
@@ -80,7 +116,7 @@ class BoardController:
             
     def setProbability(self, id, p):
         if self.itemsState[id]==-1: #dont display probability if square is known
-            self.itemsView[id].setProbability(p)
+            self.itemsView[id].setProbability(p, self.verboseDisplay)
             
             
     def getSurroundingIndexesOld(self, id):
