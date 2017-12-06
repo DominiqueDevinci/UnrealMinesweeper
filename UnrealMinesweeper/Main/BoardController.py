@@ -35,29 +35,43 @@ class BoardController:
         
     def addItemView(self, index, pushButton): #argument expected: QPushButtonCustom
         self.itemsView[index]=pushButton
-        pushButton.connect(pushButton, SIGNAL("clicked()"), lambda: self.itemClicked(pushButton))
+        pushButton.connect(pushButton, SIGNAL("clicked()"), lambda: self.itemClicked(pushButton.id))
         
     def gameOver(self):
         for i, val in enumerate(self.itemsValue):
             if(val):
                 self.itemsView[i].setState(-3)
+        self.view.setStatus("Game over !")
         
-    def itemClicked(self, button):
-        id=button.id
+    def itemClicked(self, id):     
         if(self.itemsValue[id]):
             self.gameOver()
         else:
             surroundingMines=0;            
         
             for i in self.getSurroundingIndexes(id):
-                try:
-                    if(self.itemsValue[i]):
-                        surroundingMines+=1
-                except:
-                    print "error with id "+str(i)
+                if(self.itemsValue[i]):
+                    surroundingMines+=1
+
             self.itemsState[id]=surroundingMines
-            button.setSurroundingMines(surroundingMines)
+            self.itemsView[id].setSurroundingMines(surroundingMines)
             self.constraintManager.computeProbabilities()
+            
+    def itemRightClicked(self, id):
+        if(self.itemsState[id]==-1):
+            setFlag(id, True)
+        elif(self.itemsState[id]==-2):
+            setFlag(id, False)
+    
+    def setFlag(self, id, flagged):        
+        if flagged is True:
+            self.itemsState[id]=-2
+        elif flagged is False:
+            self.itemsState[id]=-1
+            
+        self.itemsView[id].setFlag(flagged)
+        
+            
                 
     def knownId(self): #iterate for associating each id with nb of mines surrounding this suqare
         for id in xrange(0, self.length):
