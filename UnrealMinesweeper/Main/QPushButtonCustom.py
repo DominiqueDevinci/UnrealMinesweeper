@@ -37,10 +37,10 @@ class QPushButtonCustom(QPushButton):
     def setFlag(self, flagged): #must be called by controller and not directly by a right click
         if(flagged):
             self.setIcon(ImageLoader.iconFlag)
-            self.surroundingMines=-1
+            self.surroundingMines=-2
         else:
             self.setIcon(QIcon())
-            self.surroundingMines=-2  
+            self.surroundingMines=-1  
         self.updateView()
         
         

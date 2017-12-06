@@ -12,6 +12,7 @@ class BoardController:
             print "You have too much mines (>50%)"
             return
         
+        self.firstClick=True;
         self.constraintManager=ConstraintManager(self)
         self.width=width
         self.height=height
@@ -19,7 +20,7 @@ class BoardController:
         self.helper=0 #default = no helper selected
         self.view=view
         self.itemsView=[None]*(width*height)
-        self.itemsState=[-1]*(width*height) #state : -3 = mine hited (game over), -2 = flagged, -1=unknown, >=0 = number of surrounding mines
+        self.itemsState=[-1]*(width*height) # -2 = flagged, -1=unknown, >=0 = number of surrounding mines
         #default state : unknown
         self.itemsValue=[False]*(width*height)
         self.verboseDisplay=False;
@@ -45,13 +46,27 @@ class BoardController:
             if(val):
                 self.itemsView[i].setState(-3)
         self.view.setStatus("Game over !")
+    
+    def doFirstClick(self, id, updateView):
+
+        minePlaced=False
+        while not minePlaced:
+            i=randint(0, self.length)
+            if not self.itemsValue[i]:
+                minePlaced=True
+                self.itemsValue[i]=True
+                print "first click ("+str(id)+") was mined, moving this mine at index "+str(i)
+        self.itemsValue[id]=False
+        self.itemClicked(id, updateView, False)   
         
     def itemClicked(self, id, updateView=True, updateHelper=True):
         if(self.itemsState[id]==-1):
             if(self.itemsValue[id]!=-2):    #else, do nothing
                 if(self.itemsValue[id]):
-                    self.itemsState[id]=-3 #lost
-                    self.gameOver()
+                    if not self.firstClick:
+                        self.gameOver()
+                    else:
+                        self.doFirstClick(id, updateView)
                 else:
                     surroundingMines=0           
                     for i in self.getSurroundingIndexes(id):
@@ -67,10 +82,13 @@ class BoardController:
                     if updateView: #
                         self.itemsView[id].setSurroundingMines(surroundingMines)
                         self.runHelper()    
-    
+        self.firstClick=False
+        
     def setVerboseDisplay(self, vd):
         self.verboseDisplay=vd
         self.runHelper() #update helper
+        for i in self.getSurroundingIndexes(63):
+            print i
             
     def runHelper(self):
         if(self.helper==1): #proba helper
@@ -96,7 +114,8 @@ class BoardController:
             self.setFlag(id, True)
         elif(self.itemsState[id]==-2):
             self.setFlag(id, False)
-            
+           
+        self.runHelper()
         #else do nothing
     
     def setFlag(self, id, flagged):        
@@ -115,34 +134,10 @@ class BoardController:
                 yield id, self.itemsState[id]
             
     def setProbability(self, id, p):
-        if self.itemsState[id]==-1: #dont display probability if square is known
             self.itemsView[id].setProbability(p, self.verboseDisplay)
             
             
-    def getSurroundingIndexesOld(self, id):
-        listIndex=list()
-        
-        
-        leftBoundOffset=1         
-        if id%self.width==0: #bord left
-            leftBoundOffset=0
-            
-        rightBoundOffset=1
-        if id%self.width==(self.width-1): #bord left
-            rightBoundOffset=0
-
-        if id>=self.width: #if it's not first line            
-            for i in range(id-self.width-(1*leftBoundOffset), id-self.width+(1*rightBoundOffset) +1):
-                 listIndex.append(i)
-                
-        for i in range(id-1, id+2):
-            listIndex.append(i)
-        
-        if id<self.width*(self.height-1): #if it's not last line
-            for i in range(id+self.width-(1*leftBoundOffset), id+self.width+(1*rightBoundOffset) +1):
-                listIndex.append(i)
-                        
-        return listIndex
+    
             
     def getSurroundingIndexes(self, id): #iterable version of getSurroundingIndex (best performances)
         
@@ -157,9 +152,12 @@ class BoardController:
         if id>=self.width: #if it's not first line            
             for i in range(id-self.width-(1*leftBoundOffset), id-self.width+(1*rightBoundOffset) +1):
                  yield i
-                
-        for i in range(id-(1*leftBoundOffset), id+1*rightBoundOffset +1):
-            yield i
+        
+        if leftBoundOffset!=0:
+            yield id-1
+                    
+        if rightBoundOffset!=0:
+            yield id+1
         
         if id<self.width*(self.height-1): #if it's not last line
             for i in range(id+self.width-(1*leftBoundOffset), id+self.width+(1*rightBoundOffset) +1):
