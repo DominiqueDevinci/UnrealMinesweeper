@@ -7,13 +7,14 @@ from ImageLoader import ImageLoader
 from BoardController import BoardController
 from Util import choose
 from QPushButtonCustom import QPushButtonCustom
+from time import sleep
 
 import Solver
 
 class MinesweeperGUI(QMainWindow):
     def __init__(self, parent = None):
         super(MinesweeperGUI, self).__init__(parent)       
-
+        self.benchmarking=False
         
         self.setCentralWidget(QWidget(self))
         self.setWindowTitle(" Unreal Minesweeper ")
@@ -85,7 +86,8 @@ class MinesweeperGUI(QMainWindow):
         ImageLoader.init();      
         self.mainLayout=None
         self.setStatus(" Ready to play ! ");
-
+        
+        
     def setDebug(self):
         self.boardController.setVerboseDisplay(self.verboseDisplay.isChecked())
 
@@ -97,12 +99,31 @@ class MinesweeperGUI(QMainWindow):
         else:
             self.boardController.setHelper(0)
   
-    def setStatus(self, str):    
-        self.statusBar().showMessage(str)
+    def setStatus(self, str, force=False):
+        if not self.benchmarking or force:    
+            self.statusBar().showMessage(str)
         
     def runBenchmarkProbasV1(self):
-        print "run benchmark"   
-         
+        self.benchmarking=True
+        victory=0
+        defeat=0
+        
+        for i in xrange(0, 500):
+            self.newGame(9, 9, 10, False)
+            rs=self.boardController.autoSolve(False) #disable updateView
+            if rs is None or rs is True:
+                if rs is True:
+                    victory+=1
+                else:
+                    break
+            else:
+                defeat+=1
+                
+            nb=victory+defeat
+            self.setStatus(str(nb)+" battles. Winrate : "+str(victory/float(nb)*100)+"% ("+str(victory)+"/"+str(defeat)+")", True)
+        
+        sleep(5)
+        self.benchmarking=False
     def initBoard(self):        
         count=0
         #init empty board
@@ -128,36 +149,36 @@ class MinesweeperGUI(QMainWindow):
             height: 50px;
         }
         """);
-        
-    def clearLayout(self, layout):
-        while layout.count():
-            print "clelan"
-            child = layout.takeAt(0)
-            if child.widget():
-                child.widget().setParent(None)
+
                  
-    def newGame(self, width, height, mines):
+    def newGame(self, width, height, mines, withView=True):
         
         #if self.mainLayout is not None:
         #    self.clearLayout(self.mainLayout)
-        oldWidget=self.centralWidget()
-        oldWidget.deleteLater()
+       
+        if withView:
+            oldWidget=self.centralWidget()
+            oldWidget.deleteLater()
+            
+            
+            self.setCentralWidget(QWidget())
+            layout = QVBoxLayout(self.centralWidget())
+            layout.addStretch()
+            layout.setMargin(0)
+            layout.setSpacing(0)
+            self.mainLayout=layout;
+            
+            
+            self.height=height
+            self.width=width
+            self.length=height*width
+            self.mines=mines
+            
+        self.boardController=BoardController(None, width, height, mines)
         
-        
-        self.setCentralWidget(QWidget())
-        layout = QVBoxLayout(self.centralWidget())
-        layout.addStretch()
-        layout.setMargin(0)
-        layout.setSpacing(0)
-        self.mainLayout=layout;
-        
-        
-        self.height=height
-        self.width=width
-        self.length=height*width
-        self.mines=mines
-        self.boardController=BoardController(self, width, height, mines)
-        self.initBoard() 
+        if withView:
+            self.initBoard() 
+            
         self.setHelper()
         self.setStatus(" ready to play ! ")
 

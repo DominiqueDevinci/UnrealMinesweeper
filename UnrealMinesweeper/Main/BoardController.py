@@ -3,6 +3,8 @@ from PyQt4.QtCore import *
 from array import array
 from random import randint
 from ConstraintManager import ConstraintManager
+from time import sleep
+
 
 class BoardController:
     
@@ -21,18 +23,18 @@ class BoardController:
         self.helper=0 #default = no helper selected
         self.view=view
         self.endGame=None #True = victory, false = lost
-        
-        self.itemsView=[None]*(width*height)
-        self.itemsState=[-1]*(width*height) # -2 = flagged, -1=unknown, >=0 = number of surrounding mines
+        self.probabilties=[-1.0]*self.length
+        self.itemsView=[None]*self.length
+        self.itemsState=[-1]*self.length # -2 = flagged, -1=unknown, >=0 = number of surrounding mines
         #default state : unknown
         self.itemsValue=[False]*(width*height)
-        self.verboseDisplay=False;
+        self.verboseDisplay=False
+        self.updateView=True
         
         minesLanded=0;
         while(minesLanded<mines):
             i=randint(0, (width*height)-1)
             if self.itemsValue[i] is not True:
-                print str(i)+" mined !"
                 self.itemsValue[i]=True
                 minesLanded+=1
         
@@ -45,17 +47,17 @@ class BoardController:
         pushButton.connect(pushButton, SIGNAL("rightClick()"), lambda: self.itemRightClicked(pushButton.id))
         
     def gameOver(self):
-        for i, val in enumerate(self.itemsValue):
-            if(val):
-                self.itemsView[i].setState(-3)
-        self.view.setStatus("Game over !")
+        if self.updateView:
+            for i, val in enumerate(self.itemsValue):
+                if(val):
+                    self.itemsView[i].setState(-3)
+            self.view.setStatus("Game over !")
         self.endGame=False
     
     def doFirstClick(self, id, updateView):
-
         minePlaced=False
         while not minePlaced:
-            i=randint(0, self.length)
+            i=randint(0, self.length-1)
             if not self.itemsValue[i]:
                 minePlaced=True
                 self.itemsValue[i]=True
@@ -63,13 +65,118 @@ class BoardController:
         self.itemsValue[id]=False
         self.itemClicked(id, updateView, False)   
         
+    
+    def browseProbZero(self):
+        for i in xrange(0, self.length):
+            if self.itemsState[i]==-1 and int(self.probabilties[i]*100)==0:
+                yield i
+                
+    def browseProb100(self):
+        for i in xrange(0, self.length):
+            if self.itemsState[i]==-1 and int(self.probabilties[i]*100)==100:
+                yield i
+                
+    def browseProbUnknow(self):
+        for i in xrange(0, self.length):
+            if self.itemsState[i]==-1 and self.probabilties[i]<0:
+                yield i
+                
+    def getLowestProb(self):
+        id_lowest=-1
+        for i in xrange(0, self.length):
+            if self.itemsState[i]==-1 and self.probabilties[i]>=0.0:
+                if id_lowest==-1:
+                    id_lowest=i
+                elif self.probabilties[i]<self.probabilties[id_lowest]:
+                    id_lowest=i
+        return id_lowest, self.probabilties[id_lowest]
+                
+    def getRandomUnknown(self):
+        tmp=list(self.browseProbUnknow())
+        nb=len(tmp)
+        if nb>0: #if there are still some unknown prob squares ...
+            randId=tmp[randint(0, nb-1)]
+            return randId, self.probabilties[randId]
+        else: #no unknown square lefting ...
+            #print "Huuh ... it's crap shoot !"
+            return self.getLowestProb()
         
-        
+    def autoSolve(self, updateView=True):        
+        self.updateView=updateView
+        limit=0
+        flagged=0    
+        self.runHelper()
+        clicked=True
+        while clicked:
+            clicked=False
+            while self.endGame is None and limit<=self.length:
+                sleep(0.001)
+
+                #compute random percent
+                cr=0
+                for i in xrange(0, self.length):
+                    if self.itemsState[i]==-1:
+                        cr+=1
+                
+                if self.nbMines-flagged==0:
+                    self.endGame=True
+                    break
+                else:
+                    percent=(self.nbMines-flagged)/float(cr)
+                    
+                #print "percent ="+str(percent*100)+"%"
+
+                limit+=1
+                
+                '''
+                Clicking on safe squares 
+                '''
+                
+                for safeId in self.browseProbZero():
+                    self.itemClicked(safeId, updateView, True) #no view, helper activated
+                    clicked=True
+                    
+                if clicked:
+                    break; #if action is done, relooping to take account of modifications
+                
+                
+                '''
+                Flagging  squares with p=100% 
+                '''
+                clicked=False   
+                for minedId in self.browseProb100():
+                    #print "flagging ..."
+                    self.setFlag(minedId, True, False) #no view, helper activated
+                    flagged+=1
+                    clicked=True
+                    
+                if clicked:
+                    break;
+                
+    
+                '''
+                Clicking on square with lowest probability (if p<20% )
+                '''
+                
+                id, prob=self.getLowestProb()
+                if id>=0 and 0.0 <= prob*100<percent:
+                    #print "clicking on "+str(id)+" which have p="+str(prob)
+                    self.itemClicked(id, False, True)
+                else:
+                    #print "Lowest prob is "+str(prob)+". Click on random case (wich prob is unknow), or if not exists on lowest possible prob ..."
+                    id, prob=self.getRandomUnknown()
+                    #print "clicking on "+str(id)+" (prob="+str(prob)  
+                    self.itemClicked(id, False, True)
+                    
+        #print "end ! limit = "+str(limit)+" and endGame = "+str(self.endGame)+" & clicked = "+str(clicked)
+        self.updateView=True
+        return self.endGame;
     def itemClicked(self, id, updateView=True, updateHelper=True):
         if(self.itemsState[id]==-1):
             if(self.itemsValue[id]!=-2):    #else, do nothing
                 if(self.itemsValue[id]):
                     if not self.firstClick:
+                        #print "clicked on mine "+str(id)+", game over ..."
                         self.gameOver()
                     else:
                         self.doFirstClick(id, updateView)
@@ -85,10 +192,12 @@ class BoardController:
                         for i in self.getSurroundingIndexes(id):
                             self.itemClicked(i, updateView, False) #don't update helper recursively ... just calculate it at the end !
                     
+                    
                     if updateView: #
                         self.itemsView[id].setSurroundingMines(surroundingMines)
                         self.updateStatus()
-                        self.runHelper() 
+                    
+                    self.runHelper() 
                            
         self.firstClick=False
         
@@ -96,8 +205,7 @@ class BoardController:
     def setVerboseDisplay(self, vd):
         self.verboseDisplay=vd
         self.runHelper() #update helper
-        for i in self.getSurroundingIndexes(63):
-            print i
+
             
     def runHelper(self):
         if(self.helper==1): #proba helper
@@ -118,23 +226,26 @@ class BoardController:
             self.helper=0
             self.cleanHelper()
                     
-    def itemRightClicked(self, id):
+    def itemRightClicked(self, id, updateView=True):
+        
         if(self.itemsState[id]==-1):
             self.setFlag(id, True)
         elif(self.itemsState[id]==-2):
             self.setFlag(id, False)
            
         self.runHelper()
-        self.updateStatus()
+        if updateView:
+            self.updateStatus()
         #else do nothing
     
-    def setFlag(self, id, flagged):        
+    def setFlag(self, id, flagged, updateView=True):        
         if flagged is True:
             self.itemsState[id]=-2
         else:
             self.itemsState[id]=-1
             
-        self.itemsView[id].setFlag(flagged)
+        if updateView:
+            self.itemsView[id].setFlag(flagged)
         
             
                 
@@ -144,7 +255,9 @@ class BoardController:
                 yield id, self.itemsState[id]
             
     def setProbability(self, id, p):
-            self.itemsView[id].setProbability(p, self.verboseDisplay)
+            self.probabilties[id]=p
+            if self.updateView:
+                self.itemsView[id].setProbability(p, self.verboseDisplay)
             
             
     def updateStatus(self):
