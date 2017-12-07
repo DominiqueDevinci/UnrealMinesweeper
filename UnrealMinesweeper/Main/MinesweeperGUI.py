@@ -108,20 +108,29 @@ class MinesweeperGUI(QMainWindow):
         victory=0
         defeat=0
         
-        for i in xrange(0, 500):
-            self.newGame(9, 9, 10, False)
-            rs=self.boardController.autoSolve(False) #disable updateView
+        width=16
+        height=16
+        mines=40
+        
+        for i in xrange(0, 1000+1):
+            sleep(1)
+            self.newGame(width, height, mines, True)
+            rs=self.boardController.autoSolve(True) #disable updateView
             if rs is None or rs is True:
                 if rs is True:
                     victory+=1
+                    break
                 else:
                     break
             else:
                 defeat+=1
                 
             nb=victory+defeat
-            self.setStatus(str(nb)+" battles. Winrate : "+str(victory/float(nb)*100)+"% ("+str(victory)+"/"+str(defeat)+")", True)
+            
+            if i%50==0:
+                self.setStatus(str(nb)+" battles. Winrate : "+str(victory/float(nb)*100)+"% ("+str(victory)+"/"+str(defeat)+"). Config : "+str(width)+"x"+str(height)+" with "+str(mines)+" mines (density : "+str(float(mines)/(width*height)*100)+"% )", True)
         
+        self.boardController.repaintView()   
         sleep(5)
         self.benchmarking=False
     def initBoard(self):        
@@ -174,7 +183,7 @@ class MinesweeperGUI(QMainWindow):
             self.length=height*width
             self.mines=mines
             
-        self.boardController=BoardController(None, width, height, mines)
+        self.boardController=BoardController(self, width, height, mines)
         
         if withView:
             self.initBoard() 

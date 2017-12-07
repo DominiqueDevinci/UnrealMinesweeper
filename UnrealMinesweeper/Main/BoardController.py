@@ -110,7 +110,7 @@ class BoardController:
         while clicked:
             clicked=False
             while self.endGame is None and limit<=self.length:
-                sleep(0.001)
+                sleep(0.1)
 
                 #compute random percent
                 cr=0
@@ -176,7 +176,7 @@ class BoardController:
             if(self.itemsValue[id]!=-2):    #else, do nothing
                 if(self.itemsValue[id]):
                     if not self.firstClick:
-                        #print "clicked on mine "+str(id)+", game over ..."
+                        print "clicked on mine "+str(id)+", game over ..."
                         self.gameOver()
                     else:
                         self.doFirstClick(id, updateView)
@@ -196,7 +196,7 @@ class BoardController:
                     if updateView: #
                         self.itemsView[id].setSurroundingMines(surroundingMines)
                         self.updateStatus()
-                    
+
                     self.runHelper() 
                            
         self.firstClick=False
@@ -258,7 +258,10 @@ class BoardController:
             self.probabilties[id]=p
             if self.updateView:
                 self.itemsView[id].setProbability(p, self.verboseDisplay)
-            
+                
+    def repaintView(self):
+        for i in xrange(0, self.length):
+            self.itemsView[i].setSurroundingMines(self.itemsState[i])
             
     def updateStatus(self):
         unknowCase=0

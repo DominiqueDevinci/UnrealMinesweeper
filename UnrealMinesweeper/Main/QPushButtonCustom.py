@@ -59,11 +59,21 @@ class QPushButtonCustom(QPushButton):
         
     def updateView(self):
         if self.surroundingMines>-1: # case known
-            self.setStyleSheet("border: 1px solid grey; background-color: rgb(224, 224, 224); color: red;") 
-            if self.surroundingMines==0:                             
-                self.setText("")
+            self.setFlat(True)
+            if self.surroundingMines==0:   
+                self.setStyleSheet("border: 1px solid grey; background-color: rgb(224, 224, 224); ")                           
+                self.setText("")                
             else:
                 self.setText(str(self.surroundingMines))
                 
-        
+            if(self.surroundingMines==1):
+                self.setStyleSheet("border: 1px solid grey; background-color: rgb(224, 224, 224); color: blue;") 
+            elif(self.surroundingMines==2):
+                self.setStyleSheet("border: 1px solid grey; background-color: rgb(224, 224, 224); color: green;") 
+            elif(self.surroundingMines>=3):
+                self.setStyleSheet("border: 1px solid grey; background-color: rgb(224, 224, 224); color: red;") 
+        else:
+            if self.surroundingMines==-2:
+                self.setIcon(ImageLoader.iconFlag)
+            
          
