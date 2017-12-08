@@ -112,8 +112,12 @@ class CSPSolver:
             if self.states[i]>=0 and i not in constraintTree:
                 yield i
                 
-        
-        
+    def getReliability(self):
+        c=0
+        for i in xrange(0, self.length):
+            c+=len(self.edges[i])    
+        return c
+    
     def nextConsistentConfig(self, id):
         unknownArea=set()
         F=0 #nb flags

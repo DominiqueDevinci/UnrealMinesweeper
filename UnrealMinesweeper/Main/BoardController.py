@@ -5,6 +5,7 @@ from random import randint
 from ConstraintManager import ConstraintManager
 from time import sleep
 from CSPSolver import CSPSolver
+import sys
 
 class BoardController:
     
@@ -101,29 +102,27 @@ class BoardController:
             #print "Huuh ... it's crap shoot !"
             return self.getLowestProb()
     
-    def runCSPSolver(self):
-        #The CSP solver doesn't revols trivials cases, and its pperfs will be very better if all ensured squares are marked as safe or mined
-        #so, we will pre-process data for the CSP solver
-        pass
-        
+
     def autoSolve(self, updateView=True):        
         self.updateView=updateView
         limit=0
         flagged=0    
-        self.runHelper()
+
         clicked=True
         while clicked:
             clicked=False
             while self.endGame is None and limit<=self.length:
-                sleep(0.1)
-
+                
+                sys.stdout.write("_")
+                #sleep(0.1)
+                self.runHelper(0) #run level 0 
                 #compute random percent
                 cr=0
                 for i in xrange(0, self.length):
                     if self.itemsState[i]==-1:
                         cr+=1
                 
-                if self.nbMines-flagged==0:
+                if self.nbMines-flagged==0 or cr == 0:
                     self.endGame=True
                     break
                 else:
@@ -158,7 +157,9 @@ class BoardController:
                 if clicked:
                     break;
                 
-    
+              
+                    sys.stdout.write("_")
+                    self.runHelper()
                 '''
                 Clicking on square with lowest probability (if p<20% )
                 '''
@@ -213,20 +214,33 @@ class BoardController:
         self.runHelper() #update helper
 
             
-    def runHelper(self):
-        if(self.helper==1): #proba helper
-            self.constraintManager.computeProbabilities()
-        elif(self.helper==2):
+    def runHelper(self, forceHelperMode=None):
+        
+        if forceHelperMode is None:
+            helper=self.helper
+        else:
+            helper=forceHelperMode
+        #print "helper = "+str(helper)
+        
+        if(helper==1 or helper == 0): #proba helper
+            self.constraintManager.computeProbabilities(helper) #the level 0 or 1 is in parameter of constraint manager
+        elif(helper==2):
+            self.constraintManager.computeProbabilities(0)
             cspSolver=CSPSolver(self.itemsState, self.width, self.height)
-            print "solving ..."
+            #print cspSolver.getReliability()
+            #print "solving ..."
             cspSolver.solve()
-            print "solverd "
-            self.probabilties=cspSolver.computeProbabilities()
-            if self.updateView:
-                for i in xrange(0, self.length):
-                    if(self.probabilties[i]>=0):
+            #print "solverd "
+            #print cspSolver.edges;
+            self.probabilties_v2=cspSolver.computeProbabilities()
+            
+            for i in xrange(0, self.length):
+                if(self.probabilties_v2[i]>=0 and not (int(self.probabilties[i]*100)==0 or int(self.probabilties[i])*100==100)):
+                    self.probabilties[i]=self.probabilties_v2[i]
+                    if self.updateView:
                         self.itemsView[i].setProbability(self.probabilties[i], self.verboseDisplay)
             
+     
         
     def cleanHelper(self):        
         for i in xrange(0, self.length):
