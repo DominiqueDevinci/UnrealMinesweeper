@@ -4,7 +4,7 @@ from array import array
 from random import randint
 from ConstraintManager import ConstraintManager
 from time import sleep
-
+from CSPSolver import CSPSolver
 
 class BoardController:
     
@@ -100,6 +100,11 @@ class BoardController:
         else: #no unknown square lefting ...
             #print "Huuh ... it's crap shoot !"
             return self.getLowestProb()
+    
+    def runCSPSolver(self):
+        #The CSP solver doesn't revols trivials cases, and its pperfs will be very better if all ensured squares are marked as safe or mined
+        #so, we will pre-process data for the CSP solver
+        pass
         
     def autoSolve(self, updateView=True):        
         self.updateView=updateView
@@ -197,7 +202,8 @@ class BoardController:
                         self.itemsView[id].setSurroundingMines(surroundingMines)
                         self.updateStatus()
 
-                    self.runHelper() 
+                    if updateHelper:
+                        self.runHelper() 
                            
         self.firstClick=False
         
@@ -211,7 +217,16 @@ class BoardController:
         if(self.helper==1): #proba helper
             self.constraintManager.computeProbabilities()
         elif(self.helper==2):
-            return;
+            cspSolver=CSPSolver(self.itemsState, self.width, self.height)
+            print "solving ..."
+            cspSolver.solve()
+            print "solverd "
+            self.probabilties=cspSolver.computeProbabilities()
+            if self.updateView:
+                for i in xrange(0, self.length):
+                    if(self.probabilties[i]>=0):
+                        self.itemsView[i].setProbability(self.probabilties[i], self.verboseDisplay)
+            
         
     def cleanHelper(self):        
         for i in xrange(0, self.length):
@@ -255,13 +270,16 @@ class BoardController:
                 yield id, self.itemsState[id]
             
     def setProbability(self, id, p):
+        
             self.probabilties[id]=p
             if self.updateView:
                 self.itemsView[id].setProbability(p, self.verboseDisplay)
                 
     def repaintView(self):
+        helper= (1<=self.helper<=2) #is helper activated ?
         for i in xrange(0, self.length):
             self.itemsView[i].setSurroundingMines(self.itemsState[i])
+
             
     def updateStatus(self):
         unknowCase=0
