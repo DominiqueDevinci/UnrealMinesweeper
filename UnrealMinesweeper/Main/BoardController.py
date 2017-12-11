@@ -2,7 +2,7 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from array import array
 from random import randint
-from ConstraintManager import ConstraintManager
+from ProbProcessor import ProbProcessor
 from time import sleep
 from CSPSolver import CSPSolver
 import sys
@@ -16,7 +16,7 @@ class BoardController:
             return
         
         self.firstClick=True;
-        self.constraintManager=ConstraintManager(self)
+        self.probProcessor=ProbProcessor(self)
         self.width=width
         self.height=height
         self.nbMines=mines;
@@ -223,9 +223,9 @@ class BoardController:
         #print "helper = "+str(helper)
         
         if(helper==1 or helper == 0): #proba helper
-            self.constraintManager.computeProbabilities(helper) #the level 0 or 1 is in parameter of constraint manager
+            self.probProcessor.computeProbabilities(helper) #the level 0 or 1 is in parameter of prob processor
         elif(helper==2):
-            self.constraintManager.computeProbabilities(0)
+            self.probProcessor.computeProbabilities(0)
             cspSolver=CSPSolver(self.itemsState, self.width, self.height)
             #print cspSolver.getReliability()
             #print "solving ..."

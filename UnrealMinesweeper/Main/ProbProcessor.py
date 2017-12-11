@@ -1,6 +1,6 @@
 from Util import choose
 
-class ConstraintManager:
+class ProbProcessor:
     
     def __init__(self, boardController):
         self.board=boardController
