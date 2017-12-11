@@ -41,8 +41,8 @@ class MinesweeperGUI(QMainWindow):
                 Game menu
         '''
         newGameEasy=QAction(" Easy (8x8  + 10 mines) ", self)
-        newGameIntermediate=QAction(" Easy (16x16  + 40 mines) ", self)
-        newGameHard=QAction(" Easy (30x16  + 99 mines) ", self)
+        newGameIntermediate=QAction(" Intermediate (16x16  + 40 mines) ", self)
+        newGameHard=QAction(" Expert (30x16  + 99 mines) ", self)
         
         newGameEasy.triggered.connect(lambda: self.newGame(8, 8, 10))
         newGameIntermediate.triggered.connect(lambda: self.newGame(16, 16, 40))
@@ -64,7 +64,7 @@ class MinesweeperGUI(QMainWindow):
         
         helpers=QActionGroup(self, exclusive=True)
         
-        self.helperNone=helpers.addAction(QAction(" No helper ! ", self, checkable=True, checked=True))
+        self.helperNone=helpers.addAction(QAction(" No help !", self, checkable=True, checked=True))
         self.helperNone.triggered.connect(self.setHelper)        
         helperMenu.addAction(self.helperNone)
         
@@ -83,11 +83,27 @@ class MinesweeperGUI(QMainWindow):
         self.verboseDisplay.triggered.connect(self.setDebug)
         debugMenu.addAction(self.verboseDisplay)
         
+        ''' Solver menu '''
+        
+        solverOneStep=QAction(" Solve next step ", self)
+        solverOneStep.triggered.connect(self.solveNextStep)                
+  
+        solverAllStep=QAction(" Solve all game ", self)
+        solverAllStep.triggered.connect(self.solveAllStep) 
+        
+        solverMenu.addAction(solverOneStep)
+        solverMenu.addAction(solverAllStep)
+        
         ImageLoader.init();      
         self.mainLayout=None
         self.setStatus(" Ready to play ! ");
         
-        
+    def solveNextStep(self):
+        self.boardController.autoSolve(True, 1)
+      
+    def solveAllStep(self):
+        self.boardController.autoSolve(True, None)
+            
     def setDebug(self):
         self.boardController.setVerboseDisplay(self.verboseDisplay.isChecked())
 

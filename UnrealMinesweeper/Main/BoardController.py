@@ -103,16 +103,16 @@ class BoardController:
             return self.getLowestProb()
     
 
-    def autoSolve(self, updateView=True):        
+    def autoSolve(self, updateView=True, steps=None):        
         self.updateView=updateView
         limit=0
         flagged=0    
-
+        nbRound=0
         clicked=True
         while clicked:
             clicked=False
-            while self.endGame is None and limit<=self.length:
-                
+            while self.endGame is None and limit<=self.length and (steps is None or steps>nbRound):
+                nbRound+=1
                 sys.stdout.write("_")
                 #sleep(0.1)
                 self.runHelper(0) #run level 0 
@@ -150,7 +150,7 @@ class BoardController:
                 clicked=False   
                 for minedId in self.browseProb100():
                     #print "flagging ..."
-                    self.setFlag(minedId, True, False) #no view, helper activated
+                    self.setFlag(minedId, True, True) #no view, helper activated
                     flagged+=1
                     clicked=True
                     
@@ -167,12 +167,12 @@ class BoardController:
                 id, prob=self.getLowestProb()
                 if id>=0 and 0.0 <= prob*100<percent:
                     #print "clicking on "+str(id)+" which have p="+str(prob)
-                    self.itemClicked(id, False, True)
+                    self.itemClicked(id, updateView, False)
                 else:
                     #print "Lowest prob is "+str(prob)+". Click on random case (wich prob is unknow), or if not exists on lowest possible prob ..."
                     id, prob=self.getRandomUnknown()
                     #print "clicking on "+str(id)+" (prob="+str(prob)  
-                    self.itemClicked(id, False, True)
+                    self.itemClicked(id, updateView, False)
                     
         #print "end ! limit = "+str(limit)+" and endGame = "+str(self.endGame)+" & clicked = "+str(clicked)
         self.updateView=True

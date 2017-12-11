@@ -19,7 +19,7 @@ import Solver
 def main():
    app = QApplication(sys.argv)   
    view = MinesweeperGUI()
-   view.newGame(16, 16, 40)
+   view.newGame(9, 9, 10)
    view.show()
    sys.exit(app.exec_())
     
